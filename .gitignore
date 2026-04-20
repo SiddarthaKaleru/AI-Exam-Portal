@@ -1,0 +1,47 @@
+# --- OS specific ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Thumbs.db:encryptable
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- General ---
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# --- Backend (Python / FastAPI) ---
+__pycache__/
+*.py[cod]
+*$py.class
+__pypackages__/
+backend/venv/
+backend/env/
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/celerybeat-schedule
+backend/*.log
+
+# --- Frontend (Node.js / React / Vite) ---
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/.eslintcache
+frontend/.vite/

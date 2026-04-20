@@ -1,0 +1,15 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+motor==3.5.0
+pymongo==4.8.0
+pyjwt==2.9.0
+bcrypt==4.2.0
+python-multipart==0.0.9
+python-dotenv==1.0.1
+pymupdf==1.24.0
+faiss-cpu==1.8.0
+langgraph==0.2.0
+litellm==1.40.0
+sentence-transformers==3.0.0
+numpy==1.26.4
+email-validator==2.2.0
