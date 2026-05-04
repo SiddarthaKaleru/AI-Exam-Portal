@@ -16,6 +16,8 @@ export default function ExamPortal() {
   const [currentQ, setCurrentQ] = useState(0);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const antiCheatEvents = useRef([]);
+  const answersRef = useRef({});
+  const handleSubmitRef = useRef();
 
   // Load exam
   useEffect(() => {
@@ -47,7 +49,7 @@ export default function ExamPortal() {
             alert('Maximum tab switches exceeded. Your exam will be auto-submitted.');
             // We use a timeout to let state update before triggering submit
             setTimeout(() => {
-              handleSubmit();
+              handleSubmitRef.current({ autoSubmittedByTabSwitch: true });
             }, 100);
           } else {
             alert(`Warning! Tab switching is not allowed. Strike ${newCount}/2.\nIf you switch tabs 3 times, your exam will be auto-submitted.`);
@@ -80,19 +82,23 @@ export default function ExamPortal() {
   }, [code]);
 
   const handleAnswer = useCallback((questionId, answer) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: answer }));
+    setAnswers((prev) => {
+      const updated = { ...prev, [questionId]: answer };
+      answersRef.current = updated;
+      return updated;
+    });
   }, []);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (options = {}) => {
     if (submitting || submitted) return;
     setSubmitting(true);
 
     try {
-      const formattedAnswers = Object.entries(answers).map(([qid, answer]) => ({
+      const formattedAnswers = Object.entries(answersRef.current).map(([qid, answer]) => ({
         question_id: qid, // Ensure it remains a string (UUID)
         answer,
       }));
-      await submitExam(code, formattedAnswers);
+      await submitExam(code, formattedAnswers, options.autoSubmittedByTabSwitch || false);
       setSubmitted(true);
       setTimeout(() => navigate(`/result/${code}`), 1500);
     } catch (err) {
@@ -100,6 +106,9 @@ export default function ExamPortal() {
       setSubmitting(false);
     }
   };
+
+  // Keep the submit ref in sync so the event listener always calls the latest version
+  handleSubmitRef.current = handleSubmit;
 
   const handleTimeUp = () => {
     handleSubmit();
@@ -156,7 +165,7 @@ export default function ExamPortal() {
             <p className="text-xs text-dark-400">{answeredCount}/{questions.length} answered</p>
           </div>
           <div className="flex items-center gap-4">
-            <Timer durationMinutes={exam?.duration_minutes || 30} onTimeUp={handleTimeUp} />
+            <Timer durationMinutes={exam?.duration_minutes ?? 30} onTimeUp={handleTimeUp} />
             <button onClick={handleSubmit} disabled={submitting}
               className="btn-primary text-sm px-4 py-2" id="submit-exam-btn">
               {submitting ? '⏳ Submitting...' : '📤 Submit'}

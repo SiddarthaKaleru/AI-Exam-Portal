@@ -25,7 +25,7 @@ export default function Timer({ durationMinutes, onTimeUp }) {
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
-  const percentage = (timeLeft / (durationMinutes * 60)) * 100;
+  const percentage = durationMinutes > 0 ? (timeLeft / (durationMinutes * 60)) * 100 : 0;
 
   const isWarning = timeLeft < 300; // less than 5 min
   const isDanger = timeLeft < 60;   // less than 1 min

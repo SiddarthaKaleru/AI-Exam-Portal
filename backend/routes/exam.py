@@ -17,6 +17,7 @@ router = APIRouter(prefix="/api/exam", tags=["Exam"])
 
 class SubmitExamRequest(BaseModel):
     answers: list  # [{question_id: int, answer: str}, ...]
+    tab_switch_auto_submitted: bool = False  # True if exam was auto-submitted due to tab switching
 
 
 class AntiCheatEvent(BaseModel):
@@ -36,6 +37,16 @@ async def get_exam(exam_code: str, user: dict = Depends(get_current_user)):
 
     if exam.get("status") != "active":
         raise HTTPException(status_code=400, detail="This exam is no longer active.")
+
+    # Check if a submission already exists
+    existing_sub = await db.submissions.find_one({
+        "exam_id": str(exam["_id"]),
+        "student_id": user.get("sub", ""),
+    })
+
+    if existing_sub:
+        raise HTTPException(status_code=400, detail="You have already submitted this exam.")
+
 
     # Strip correct answers from questions before sending to student
     safe_questions = []
@@ -153,6 +164,7 @@ async def submit_exam(
         answers=req.answers,
     )
     submission["student_email"] = user.get("email", "Unknown")
+    submission["tab_switch_auto_submitted"] = req.tab_switch_auto_submitted
     submission.update({
         "score": eval_result.get("score", 0),
         "max_score": eval_result.get("max_score", 0),
