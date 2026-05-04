@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { listExams } from '../services/api';
+import { listExams, toggleExamStatus } from '../services/api';
 import Navbar from '../components/Navbar';
 
 export default function AdminDashboard() {
@@ -19,6 +19,17 @@ export default function AdminDashboard() {
       console.error('Failed to load exams:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (examId) => {
+    try {
+      const { data } = await toggleExamStatus(examId);
+      setExams(prev => prev.map(e =>
+        e._id === examId ? { ...e, status: data.status } : e
+      ));
+    } catch (err) {
+      console.error('Failed to toggle status:', err);
     }
   };
 
@@ -91,11 +102,25 @@ export default function AdminDashboard() {
                     <span className="px-3 py-1 rounded-lg bg-primary-500/20 text-primary-400 font-mono text-sm font-bold">
                       {exam.exam_code}
                     </span>
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                      exam.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-dark-700 text-dark-400'
-                    }`}>
-                      {exam.status}
-                    </span>
+                    <button
+                      onClick={() => handleToggleStatus(exam._id)}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        exam.status === 'active'
+                          ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/25'
+                          : 'bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/25'
+                      }`}
+                      title={exam.status === 'active' ? 'Click to deactivate' : 'Click to activate'}
+                      id={`toggle-status-${exam._id}`}
+                    >
+                      <span className={`w-8 h-4 rounded-full relative transition-all ${
+                        exam.status === 'active' ? 'bg-emerald-500/40' : 'bg-dark-600'
+                      }`}>
+                        <span className={`absolute top-0.5 w-3 h-3 rounded-full transition-all ${
+                          exam.status === 'active' ? 'left-4 bg-emerald-400' : 'left-0.5 bg-dark-400'
+                        }`} />
+                      </span>
+                      {exam.status === 'active' ? 'Active' : 'Inactive'}
+                    </button>
                     <Link to={`/analytics/${exam._id}`}
                       className="px-3 py-1.5 rounded-lg bg-dark-700 text-dark-300 hover:text-white hover:bg-dark-600 text-sm transition-all">
                       📊 Analytics
