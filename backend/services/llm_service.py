@@ -45,11 +45,22 @@ def generate_json(prompt: str, system_prompt: str = "", temperature: float = 0.3
         return json.loads(raw)
     except json.JSONDecodeError:
         # Try to find JSON in the response
-        start = raw.find("{")
-        end = raw.rfind("}") + 1
-        if start == -1:
-            start = raw.find("[")
+        first_brace = raw.find("{")
+        first_bracket = raw.find("[")
+        
+        if first_bracket != -1 and (first_brace == -1 or first_bracket < first_brace):
+            start = first_bracket
             end = raw.rfind("]") + 1
+        elif first_brace != -1:
+            start = first_brace
+            end = raw.rfind("}") + 1
+        else:
+            start = -1
+            end = -1
+            
         if start != -1 and end > start:
-            return json.loads(raw[start:end])
+            try:
+                return json.loads(raw[start:end])
+            except json.JSONDecodeError as e:
+                raise ValueError(f"LLM did not return valid JSON. Error: {str(e)}\nRaw: {raw[:200]}")
         raise ValueError(f"LLM did not return valid JSON: {raw[:200]}")
