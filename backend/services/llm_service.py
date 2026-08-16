@@ -1,25 +1,31 @@
-"""LLM service — OpenRouter API via litellm."""
+"""LLM service — OpenRouter API via ChatLiteLLM (LangSmith-traced)."""
 
 import json
-from litellm import completion
+from langchain_community.chat_models import ChatLiteLLM
+from langchain_core.messages import HumanMessage, SystemMessage
 from config import OPENROUTER_API_KEY, LLM_MODEL
+
+
+def _get_llm(temperature: float = 0.7) -> ChatLiteLLM:
+    """Create a ChatLiteLLM instance (auto-traced by LangSmith)."""
+    return ChatLiteLLM(
+        model=LLM_MODEL,
+        api_key=OPENROUTER_API_KEY,
+        temperature=temperature,
+        max_tokens=4096,
+    )
 
 
 def generate_text(prompt: str, system_prompt: str = "", temperature: float = 0.7) -> str:
     """Generate text from the LLM."""
     messages = []
     if system_prompt:
-        messages.append({"role": "system", "content": system_prompt})
-    messages.append({"role": "user", "content": prompt})
+        messages.append(SystemMessage(content=system_prompt))
+    messages.append(HumanMessage(content=prompt))
 
-    response = completion(
-        model=LLM_MODEL,
-        messages=messages,
-        temperature=temperature,
-        max_tokens=4096,
-        api_key=OPENROUTER_API_KEY,
-    )
-    return response.choices[0].message.content
+    llm = _get_llm(temperature=temperature)
+    response = llm.invoke(messages)
+    return response.content
 
 
 def generate_json(prompt: str, system_prompt: str = "", temperature: float = 0.3) -> dict | list:
@@ -64,3 +70,4 @@ def generate_json(prompt: str, system_prompt: str = "", temperature: float = 0.3
             except json.JSONDecodeError as e:
                 raise ValueError(f"LLM did not return valid JSON. Error: {str(e)}\nRaw: {raw[:200]}")
         raise ValueError(f"LLM did not return valid JSON: {raw[:200]}")
+
