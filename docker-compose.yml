@@ -1,0 +1,59 @@
+services:
+  # ─── MongoDB Database ──────────────────────────────────────────────
+  mongodb:
+    image: mongo:7.0
+    container_name: exam_portal_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - exam_network
+
+  # ─── FastAPI Backend ───────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: exam_portal_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017}
+      - DB_NAME=${DB_NAME:-exam_portal}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-openrouter/nvidia/nemotron-3-super-120b-a12b:free}
+      - JWT_SECRET=${JWT_SECRET:-exam_portal_jwt_secret_key_2026}
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+      - backend_uploads:/app/uploads
+    depends_on:
+      - mongodb
+    networks:
+      - exam_network
+
+  # ─── React Frontend (Nginx Reverse Proxy) ──────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: exam_portal_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - exam_network
+
+networks:
+  exam_network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+  backend_uploads:
