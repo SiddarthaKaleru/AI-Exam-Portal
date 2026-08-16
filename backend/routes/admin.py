@@ -74,6 +74,9 @@ async def create_exam(
             raise HTTPException(status_code=404, detail=f"PDF file '{filename}' not found. Upload it first.")
         pdf_paths.append(pdf_path)
 
+    if req.duration_minutes <= 0:
+        raise HTTPException(status_code=400, detail="Exam duration must be at least 1 minute")
+
     # Build pipeline input state
     input_state = {
         "subject": req.subject,
@@ -133,3 +136,23 @@ async def get_exam_details(exam_id: str, admin: dict = Depends(require_admin)):
 
     exam["_id"] = str(exam["_id"])
     return {"exam": exam}
+
+
+@router.patch("/exam/{exam_id}/toggle-status")
+async def toggle_exam_status(exam_id: str, admin: dict = Depends(require_admin)):
+    """Toggle exam status between active and inactive."""
+    db = get_database()
+
+    exam = await db.exams.find_one({"_id": ObjectId(exam_id)})
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found")
+
+    current_status = exam.get("status", "active")
+    new_status = "inactive" if current_status == "active" else "active"
+
+    await db.exams.update_one(
+        {"_id": ObjectId(exam_id)},
+        {"$set": {"status": new_status}},
+    )
+
+    return {"message": f"Exam is now {new_status}", "status": new_status}

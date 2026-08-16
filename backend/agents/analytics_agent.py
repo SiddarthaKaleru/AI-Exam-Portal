@@ -64,6 +64,8 @@ async def analytics_agent(exam_id: str) -> dict:
             "score": s.get("score", 0),
             "max_score": s.get("max_score", 0),
             "percentage": s.get("percentage", 0),
+            "tab_switch_auto_submitted": s.get("tab_switch_auto_submitted", False),
+            "anti_cheat_flags": s.get("anti_cheat_flags", []),
         })
 
     # ─── Score Distribution ──────────────────────────────────────

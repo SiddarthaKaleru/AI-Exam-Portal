@@ -53,6 +53,7 @@ export default function CreateExam() {
 
   const handleCreate = async () => {
     if (!form.subject || !form.topic) return setError('Subject and topic are required');
+    if (parseInt(form.duration_minutes) <= 0) return setError('Exam duration must be at least 1 minute');
     setError('');
     setLoading(true);
     try {
@@ -174,20 +175,33 @@ export default function CreateExam() {
         {step === 3 && (
           <div className="glass-card p-8 animate-slide-up space-y-4">
             <h2 className="text-xl font-bold text-white mb-4">Exam Configuration</h2>
+            {(() => {
+              const handleNumberChange = (field, value) => {
+                setForm({ ...form, [field]: value === '' ? '' : value });
+              };
+              const handleNumberBlur = (field, fallback) => {
+                const parsed = parseInt(form[field]);
+                setForm(prev => ({ ...prev, [field]: isNaN(parsed) || parsed < 0 ? fallback : parsed }));
+              };
+              return (
+              <>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-dark-300 mb-1.5">Duration (minutes)</label>
-                <input type="number" value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: parseInt(e.target.value) || 30 })}
+                <input type="number" value={form.duration_minutes} onChange={(e) => handleNumberChange('duration_minutes', e.target.value)}
+                  onBlur={() => handleNumberBlur('duration_minutes', 30)}
                   className="input-field" min={5} max={180} id="exam-duration" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-dark-300 mb-1.5">MCQ Count</label>
-                <input type="number" value={form.num_mcq} onChange={(e) => setForm({ ...form, num_mcq: parseInt(e.target.value) || 0 })}
+                <input type="number" value={form.num_mcq} onChange={(e) => handleNumberChange('num_mcq', e.target.value)}
+                  onBlur={() => handleNumberBlur('num_mcq', 0)}
                   className="input-field" min={0} max={20} id="exam-mcq" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-dark-300 mb-1.5">Marks per MCQ</label>
-                <input type="number" value={form.marks_mcq} onChange={(e) => setForm({ ...form, marks_mcq: parseInt(e.target.value) || 1 })}
+                <input type="number" value={form.marks_mcq} onChange={(e) => handleNumberChange('marks_mcq', e.target.value)}
+                  onBlur={() => handleNumberBlur('marks_mcq', 1)}
                   className="input-field" min={1} max={10} id="exam-marks-mcq" />
               </div>
             </div>
@@ -195,12 +209,14 @@ export default function CreateExam() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-dark-300 mb-1.5">Short Answer Count</label>
-                <input type="number" value={form.num_short} onChange={(e) => setForm({ ...form, num_short: parseInt(e.target.value) || 0 })}
+                <input type="number" value={form.num_short} onChange={(e) => handleNumberChange('num_short', e.target.value)}
+                  onBlur={() => handleNumberBlur('num_short', 0)}
                   className="input-field" min={0} max={10} id="exam-short" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-dark-300 mb-1.5">Marks per Short Answer</label>
-                <input type="number" value={form.marks_short} onChange={(e) => setForm({ ...form, marks_short: parseInt(e.target.value) || 3 })}
+                <input type="number" value={form.marks_short} onChange={(e) => handleNumberChange('marks_short', e.target.value)}
+                  onBlur={() => handleNumberBlur('marks_short', 3)}
                   className="input-field" min={1} max={20} id="exam-marks-short" />
               </div>
             </div>
@@ -208,19 +224,24 @@ export default function CreateExam() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-dark-300 mb-1.5">Long Answer Count</label>
-                <input type="number" value={form.num_long} onChange={(e) => setForm({ ...form, num_long: parseInt(e.target.value) || 0 })}
+                <input type="number" value={form.num_long} onChange={(e) => handleNumberChange('num_long', e.target.value)}
+                  onBlur={() => handleNumberBlur('num_long', 0)}
                   className="input-field" min={0} max={10} id="exam-long" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-dark-300 mb-1.5">Marks per Long Answer</label>
-                <input type="number" value={form.marks_long} onChange={(e) => setForm({ ...form, marks_long: parseInt(e.target.value) || 5 })}
+                <input type="number" value={form.marks_long} onChange={(e) => handleNumberChange('marks_long', e.target.value)}
+                  onBlur={() => handleNumberBlur('marks_long', 5)}
                   className="input-field" min={1} max={50} id="exam-marks-long" />
               </div>
             </div>
+              </>
+              );
+            })()}
             <div className="glass p-4 rounded-xl mt-4">
               <p className="text-sm text-dark-300">
-                📊 Total: <span className="text-white font-bold">{form.num_mcq + form.num_short + form.num_long}</span> questions •
-                ⏱️ Duration: <span className="text-white font-bold">{form.duration_minutes}</span> minutes •
+                📊 Total: <span className="text-white font-bold">{(parseInt(form.num_mcq) || 0) + (parseInt(form.num_short) || 0) + (parseInt(form.num_long) || 0)}</span> questions •
+                ⏱️ Duration: <span className="text-white font-bold">{parseInt(form.duration_minutes) || 0}</span> minutes •
                 📄 PDFs: <span className="text-white font-bold">{uploadedFilenames.length}</span> uploaded
               </p>
             </div>

@@ -34,12 +34,13 @@ export const uploadPDF = (files) => {
 export const createExam = (data) => API.post('/admin/create-exam', data);
 export const listExams = () => API.get('/admin/exams');
 export const getExamDetails = (examId) => API.get(`/admin/exam/${examId}`);
+export const toggleExamStatus = (examId) => API.patch(`/admin/exam/${examId}/toggle-status`);
 
 // ─── Exam ─────────────────────────────────────────────────────────
 
 export const fetchExam = (code) => API.get(`/exam/${code}`);
 export const startExam = (code) => API.post(`/exam/${code}/start`);
-export const submitExam = (code, answers) => API.post(`/exam/${code}/submit`, { answers });
+export const submitExam = (code, answers, tabSwitchAutoSubmitted = false) => API.post(`/exam/${code}/submit`, { answers, tab_switch_auto_submitted: tabSwitchAutoSubmitted });
 export const reportAntiCheat = (code, events) => API.post(`/exam/${code}/anti-cheat`, { events });
 export const getResult = (code) => API.get(`/exam/${code}/result`);
 export const listStudentSubmissions = () => API.get('/exam/student/submissions');

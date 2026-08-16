@@ -6,6 +6,41 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#818cf8'];
 
+const CustomYAxisTick = ({ x, y, payload }) => {
+  const maxLineLength = 25;
+  const words = payload.value.split(' ');
+  let lines = [];
+  let currentLine = '';
+
+  words.forEach(word => {
+    if ((currentLine + word).length > maxLineLength) {
+      if (currentLine) lines.push(currentLine.trim());
+      currentLine = word + ' ';
+    } else {
+      currentLine += word + ' ';
+    }
+  });
+  if (currentLine) lines.push(currentLine.trim());
+
+  return (
+    <g transform={`translate(${x - 10},${y})`}>
+      {lines.map((line, i) => (
+        <text
+          key={i}
+          x={0}
+          y={(i - (lines.length - 1) / 2) * 12}
+          dy={4}
+          textAnchor="end"
+          fill="#94a3b8"
+          fontSize={11}
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  );
+};
+
 export default function Analytics() {
   const { examId } = useParams();
   const [analytics, setAnalytics] = useState(null);
@@ -119,9 +154,12 @@ export default function Analytics() {
   }));
 
   const topicData = (analytics.topic_analysis || []).map((t) => ({
-    topic: t.topic.length > 15 ? t.topic.slice(0, 15) + '...' : t.topic,
+    topic: t.topic,
     percentage: t.average_percentage,
   }));
+
+  // Dynamic height to prevent long labels from overlapping vertically
+  const chartHeight = Math.max(250, topicData.length * 60);
 
   const statCards = [
     { label: 'Students', value: analytics.total_students, icon: '👥', color: 'from-blue-500 to-cyan-500' },
@@ -159,7 +197,7 @@ export default function Analytics() {
           {/* Score Distribution */}
           <div className="glass-card p-6">
             <h3 className="text-lg font-bold text-white mb-4">Score Distribution</h3>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={chartHeight}>
               <BarChart data={distributionData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="range" stroke="#94a3b8" fontSize={12} />
@@ -173,11 +211,11 @@ export default function Analytics() {
           {/* Topic Analysis */}
           <div className="glass-card p-6">
             <h3 className="text-lg font-bold text-white mb-4">Topic Performance</h3>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={chartHeight}>
               <BarChart data={topicData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis type="number" domain={[0, 100]} stroke="#94a3b8" fontSize={12} />
-                <YAxis dataKey="topic" type="category" stroke="#94a3b8" fontSize={11} width={100} />
+                <YAxis dataKey="topic" type="category" stroke="#94a3b8" width={180} tick={<CustomYAxisTick />} />
                 <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', color: '#f1f5f9' }} />
                 <Bar dataKey="percentage" fill="#8b5cf6" radius={[0, 8, 8, 0]} />
               </BarChart>
@@ -197,6 +235,7 @@ export default function Analytics() {
                   <th className="text-left py-3 px-4 text-dark-400 text-sm font-medium">Score</th>
                   <th className="text-left py-3 px-4 text-dark-400 text-sm font-medium">Percentage</th>
                   <th className="text-left py-3 px-4 text-dark-400 text-sm font-medium">Grade</th>
+                  <th className="text-left py-3 px-4 text-dark-400 text-sm font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,6 +272,19 @@ export default function Analytics() {
                           grade === 'D' ? 'bg-orange-500/20 text-orange-400' :
                           'bg-emerald-500/20 text-emerald-400'
                         }`}>{grade}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        {student.tab_switch_auto_submitted ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/15 border border-red-500/25" title="Exam was auto-submitted due to tab switch violations">
+                            <span className="text-base">🚩</span>
+                            <span className="text-xs font-semibold text-red-400">Tab Switch</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/25">
+                            <span className="text-xs">✓</span>
+                            <span className="text-xs font-semibold text-emerald-400">Clean</span>
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );
