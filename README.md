@@ -65,12 +65,43 @@ The exam generation pipeline uses **LangGraph** to orchestrate 7 specialized age
 
 ---
 
-## 🚀 Quick Start
+## 🐳 Run with Docker (Recommended)
+
+Make sure you have **Docker Desktop** installed and running on your system.
+
+### 1. Configure Environment Variables
+Copy `.env.example` to `.env` in the root directory and add your OpenRouter API key:
+```bash
+cp .env.example .env
+```
+*(Or create a `.env` file in the root folder with `OPENROUTER_API_KEY=your_key_here`)*
+
+### 2. Build and Start All Containers
+```bash
+docker compose up --build
+```
+> **What this does:**
+> - Launches **MongoDB** container on port `27017` with persistent volume
+> - Builds and runs the **FastAPI Backend** container on port `8000`
+> - Builds and serves the **React Frontend** via Nginx on ports `5173` and `3000` with automatic API reverse-proxying
+
+### 3. Open in Browser
+- Frontend Application: [http://localhost:5173](http://localhost:5173) or [http://localhost:3000](http://localhost:3000)
+- Backend Swagger API Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+To stop the containers:
+```bash
+docker compose down
+```
+
+---
+
+## 🚀 Manual Quick Start (Without Docker)
 
 ### Prerequisites
 - Python 3.10+
 - Node.js 18+
-- MongoDB Atlas account
+- MongoDB (Local or Atlas account)
 - OpenRouter / Groq API key
 
 ### 1. Backend Setup
@@ -80,7 +111,7 @@ cd backend
 
 # Create .env from template
 cp .env.example .env
-# Edit .env with your MongoDB Atlas URI and API key
+# Edit .env with your MongoDB URI and API key
 
 # Create and activate virtual environment
 python -m venv venv
@@ -104,7 +135,7 @@ npm install
 npm run dev
 ```
 
-### 3. Usage
+### 3. Usage Guide
 
 1. Open `http://localhost:5173`
 2. **Register as Admin** → Login
