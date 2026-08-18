@@ -1,6 +1,6 @@
 # 🎓 AI Exam Portal — Multi-Agent System
 
-An AI-powered exam portal where admins upload syllabus/notes PDFs, and a **7-agent LangGraph pipeline** automatically generates exams, manages student sessions, evaluates answers, and produces analytics dashboards.
+An AI-powered exam portal where admins upload syllabus/notes PDFs, and a **7-agent LangGraph pipeline** automatically generates exams, manages student sessions, evaluates answers, and produces analytics dashboards. Integrated with **LangSmith** for full LLM observability, trace monitoring, and automated benchmark evaluation.
 
 ---
 
@@ -28,7 +28,9 @@ An AI-powered exam portal where admins upload syllabus/notes PDFs, and a **7-age
 - **Copy Protection** — Question text cannot be copied
 - **Event Logging** — All anti-cheat events are recorded per student session
 
-### 🤖 AI & Evaluation
+### 🔬 Evaluation & Observability (LangSmith)
+- **Full LLM Tracing** — Real-time tracking of every prompt, response, latency, and token consumption on LangSmith
+- **Automated Agent Benchmark Evaluation** — Standalone evaluation suite testing question quality, scoring accuracy, and topic extraction
 - **Semantic Answer Evaluation** — LLM-based evaluation for short and long answers (not just keyword matching)
 - **Direct MCQ Scoring** — Instant correct/incorrect evaluation for multiple choice
 - **Hallucination-Safe Marks** — Post-LLM override ensures configured marks are always respected
@@ -56,12 +58,39 @@ The exam generation pipeline uses **LangGraph** to orchestrate 7 specialized age
 | Layer | Technology |
 |---|---|
 | **Backend** | Python, FastAPI, LangGraph |
-| **LLM** | OpenRouter / Groq AI via litellm |
-| **Database** | MongoDB Atlas |
-| **Vector DB** | FAISS + sentence-transformers |
+| **LLM & Tracing** | OpenRouter / LiteLLM, LangSmith, LangChain |
+| **Database** | MongoDB Atlas / Local MongoDB |
+| **Vector DB** | FAISS + sentence-transformers (`all-MiniLM-L6-v2`) |
 | **Frontend** | React 18 + Vite + Tailwind CSS |
 | **Auth** | JWT (JSON Web Tokens) + bcrypt |
-| **HTTP Client** | Axios with JWT interceptor |
+| **Deployment** | Docker & Docker Compose |
+
+---
+
+## 🔬 LangSmith Observability & Evaluation
+
+This project is instrumented with **LangSmith** to monitor LLM operations, trace agent execution paths, and run automated evaluation benchmarks.
+
+### 1. Tracing
+When `LANGCHAIN_TRACING_V2=true` is set, all agent invocations and LLM completions are streamed directly to LangSmith:
+- **Trace Details:** Inspect system prompts, user inputs, raw outputs, token counts, and execution latency.
+- **Agent Chains:** View nested multi-agent runs across the LangGraph StateGraph pipeline.
+
+### 2. Running Automated Evaluations
+Run the built-in test suite to evaluate agent performance across 8 benchmark test cases:
+
+```bash
+cd backend
+python langsmith_eval.py
+```
+
+### 3. Evaluation Metrics
+The evaluation script uploads datasets and runs custom evaluators in LangSmith:
+- **`question_quality`**: Validates question structure, required keys, 4 options for MCQs, and valid correct answer mapping.
+- **`evaluation_accuracy`**: Benchmarks the Evaluation Agent against ground-truth student answers (MCQ exact matching & semantic short answers).
+- **`topic_extraction`**: Checks topic count, coherence, and syllabus keyword coverage.
+
+Results, comparison charts, and run traces are accessible on [smith.langchain.com](https://smith.langchain.com) under the configured project (`ai-exam-portal`).
 
 ---
 
@@ -70,11 +99,10 @@ The exam generation pipeline uses **LangGraph** to orchestrate 7 specialized age
 Make sure you have **Docker Desktop** installed and running on your system.
 
 ### 1. Configure Environment Variables
-Copy `.env.example` to `.env` in the root directory and add your OpenRouter API key:
+Copy `.env.example` to `.env` in the root directory and configure your keys:
 ```bash
 cp .env.example .env
 ```
-*(Or create a `.env` file in the root folder with `OPENROUTER_API_KEY=your_key_here`)*
 
 ### 2. Build and Start All Containers
 ```bash
@@ -102,7 +130,8 @@ docker compose down
 - Python 3.10+
 - Node.js 18+
 - MongoDB (Local or Atlas account)
-- OpenRouter / Groq API key
+- OpenRouter API key
+- LangSmith API key (Optional, for tracing & evaluation)
 
 ### 1. Backend Setup
 
@@ -111,7 +140,7 @@ cd backend
 
 # Create .env from template
 cp .env.example .env
-# Edit .env with your MongoDB URI and API key
+# Edit .env with your MongoDB URI, OpenRouter key, and LangSmith key
 
 # Create and activate virtual environment
 python -m venv venv
@@ -155,7 +184,7 @@ npm run dev
 │   ├── agents/              # 7 LangGraph agents + orchestrator
 │   │   ├── content_agent.py         # PDF parsing & vector indexing
 │   │   ├── question_agent.py        # AI question generation
-│   │   ├── website_builder_agent.py # Exam config builder
+│   │   ├── website_agent.py         # Exam config builder
 │   │   ├── exam_manager_agent.py    # Exam document & code creation
 │   │   ├── evaluation_agent.py      # Answer evaluation (MCQ + LLM)
 │   │   ├── anti_cheat_agent.py      # Anti-cheat event analysis
@@ -173,12 +202,15 @@ npm run dev
 │   ├── services/            # Core services
 │   │   ├── pdf_service.py           # PDF text extraction
 │   │   ├── vector_store.py          # FAISS vector store management
-│   │   └── llm_service.py           # LLM client (OpenRouter/Groq)
+│   │   └── llm_service.py           # LLM client with LangSmith tracing
 │   ├── utils/               # Utilities
 │   │   └── auth.py                  # JWT token helpers
+│   ├── langsmith_eval.py    # LangSmith evaluation benchmark suite
 │   ├── main.py              # FastAPI entry point
 │   ├── database.py          # MongoDB connection
-│   └── config.py            # Environment config
+│   ├── config.py            # Environment config
+│   ├── Dockerfile           # Backend containerization
+│   └── requirements.txt     # Python dependencies
 ├── frontend/
 │   ├── src/
 │   │   ├── pages/           # React page components
@@ -193,11 +225,15 @@ npm run dev
 │   │   ├── components/      # Reusable UI components
 │   │   │   ├── Navbar.jsx           # Navigation bar
 │   │   │   ├── ProtectedRoute.jsx   # Auth route guard
-│   │   │   └── QuestionCard.jsx     # Question display component
+│   │   │   ├── QuestionCard.jsx     # Question display component
+│   │   │   └── Timer.jsx            # Exam countdown timer
 │   │   └── services/
 │   │       └── api.js               # Axios API client with JWT
+│   ├── Dockerfile           # Frontend containerization
+│   ├── nginx.conf           # Nginx reverse proxy configuration
 │   ├── tailwind.config.js   # Tailwind CSS configuration
 │   └── vite.config.js       # Vite build configuration
+├── docker-compose.yml       # Multi-container orchestration
 └── README.md
 ```
 
@@ -205,13 +241,24 @@ npm run dev
 
 ## 🔑 Environment Variables
 
-Create a `.env` file in the `backend/` directory:
+Create a `.env` file in the `backend/` directory or root directory:
 
 ```env
-MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/
+# MongoDB
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/?appName=Cluster0
 DB_NAME=ai_exam_portal
-JWT_SECRET=your-secret-key
-OPENROUTER_API_KEY=your-api-key
+
+# LLM (OpenRouter)
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+LLM_MODEL=openrouter/nvidia/nemotron-3-super-120b-a12b:free
+
+# Auth
+JWT_SECRET=your_jwt_secret_key_here
+
+# LangSmith Tracing & Evaluation (https://smith.langchain.com)
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=your_langsmith_api_key_here
+LANGCHAIN_PROJECT=ai-exam-portal
 ```
 
 ---
@@ -220,20 +267,20 @@ OPENROUTER_API_KEY=your-api-key
 
 ### Auth
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+|---|---|---|
 | POST | `/api/auth/register` | Register new user (admin/student) |
 | POST | `/api/auth/login` | Login and receive JWT token |
 
 ### Admin
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+|---|---|---|
 | POST | `/api/admin/upload` | Upload PDF files (up to 5) |
 | POST | `/api/admin/create-exam` | Create exam via AI pipeline |
 | GET | `/api/admin/exams` | List all exams |
 
 ### Exam (Student)
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+|---|---|---|
 | GET | `/api/exam/{code}` | Fetch exam questions (answers stripped) |
 | POST | `/api/exam/{code}/start` | Record exam start time |
 | POST | `/api/exam/{code}/submit` | Submit answers for evaluation |
@@ -243,7 +290,7 @@ OPENROUTER_API_KEY=your-api-key
 
 ### Analytics
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+|---|---|---|
 | GET | `/api/analytics/{examId}` | Get exam analytics & rankings |
 
 ---
@@ -251,3 +298,4 @@ OPENROUTER_API_KEY=your-api-key
 ## 📜 License
 
 This project is built for educational purposes as a Major Project.
+
